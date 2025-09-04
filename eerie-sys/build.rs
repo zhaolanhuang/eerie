@@ -181,7 +181,7 @@ fn main() {
                 .build_target("iree-flatcc-cli")
                 .out_dir(&build_path.join("host"));
             host_config.build();
-            host_config.build_target("generate_embed_data").build();
+            host_config.build_target("iree-c-embed-data").build(); //changed name in latest iree
         }
         #[cfg(not(feature = "std"))]
         let host_bin_dir = build_path.join("host/build/tools");
@@ -241,7 +241,8 @@ fn main() {
             ]);
             // C flags for no-std runtime build
             cflags.extend(vec![
-                "-specs=nosys.specs",
+                // "-specs=nosys.specs",
+                // "-specs=nano.specs",
                 "-DIREE_PLATFORM_GENERIC=1",
                 "-DIREE_FILE_IO_ENABLE=0",
                 "-DIREE_SYNCHRONIZATION_DISABLE_UNSAFE=1",
@@ -295,6 +296,8 @@ fn main() {
         match target_os.as_str() {
             "linux" => {
                 println!("cargo:rustc-link-lib=stdc++");
+                println!("cargo:rustc-link-lib=m"); // for ariel-os native: avoid undefined reference to math functions.
+
             }
 
             "macos" => {
