@@ -12,7 +12,7 @@ repository = "https://github.com/gmmyung/eerie"
 eerie-sys = { path = "eerie-sys", version = "0.2.6", default-features = false }
 thiserror = { version = "1.0.48", optional = true }
 log = "0.4"
-half = "2.6.0"
+half = { version = "2.6.0", default-features = false }
 
 [workspace]
 members = [

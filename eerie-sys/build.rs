@@ -1,5 +1,6 @@
 use std::env;
 use std::path::{Path, PathBuf};
+use std::process::Stdio;
 
 fn generate_bindings(
     sysroot: Option<&PathBuf>,
@@ -21,7 +22,8 @@ fn generate_bindings(
             .clang_arg(format!("-I{}", include_path.display()))
             .derive_default(true)
             .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()));
-
+        println!("cargo:warning=include_path: {}", include_path.display());
+        builder.command_line_flags().iter().for_each(|x| println!("cargo:warning=bingen CMD_FLAGS: {}", x));
         #[cfg(not(feature = "std"))]
         {
             builder = builder
@@ -33,10 +35,27 @@ fn generate_bindings(
                 .clang_arg("-Wno-unused-variable")
                 .clang_arg("-DIREE_SYNCHRONIZATION_DISABLE_UNSAFE=1")
                 .clang_arg("-DFLATCC_USE_GENERIC_ALIGNED_ALLOC=1")
+                .clang_arg("-v")
         }
 
         if let Some(sysroot) = sysroot {
+            println!("cargo::warning=current sysroot:{}", sysroot.display());
             builder = builder.clang_arg(format!("--sysroot={}", sysroot.display()));
+        } else {
+            // Auto includes platform headers when sysroot is invalid.
+            let compiler_output = cc::Build::new().get_compiler()
+                        .to_command()
+                        .args(&["-E", "-x", "c", "-", "-v"])
+                        .stdin(Stdio::null())
+                        .output()
+                        .expect("Failed to fetch compiler include path!");
+
+            let includes = parse_include_paths(&String::from_utf8(compiler_output.stderr).expect("Failed to parse compiler output!").as_str());
+            println!("cargo:warning=parse include path done!");
+            for path in &includes {
+                println!("cargo:warning=include path: {}", path);
+                builder = builder.clang_arg(format!("-I{}", path))
+            }
         }
 
         builder
@@ -45,6 +64,27 @@ fn generate_bindings(
             .write_to_file(&out_path)
             .expect("Couldn't write bindings!");
     }
+}
+
+
+fn parse_include_paths(stderr: &str) -> Vec<String> {
+    let mut paths = Vec::new();
+    let mut in_block = false;
+
+    for line in stderr.lines() {
+        if line.contains("#include <...> search starts here:") {
+            in_block = true;
+            continue;
+        }
+        if line.contains("End of search list.") {
+            break;
+        }
+        if in_block {
+            paths.push(line.trim().to_string());
+        }
+    }
+
+    paths
 }
 
 fn main() {
@@ -126,14 +166,25 @@ fn main() {
             .output()
             .expect("Failed to execute command");
         let sysroot: Option<PathBuf> = match sysroot_output.status.success() {
-            true => Some(
-                String::from_utf8(sysroot_output.stdout)
+            true => {
+    
+                let _s = String::from_utf8(sysroot_output.stdout)
                     .expect("Failed to parse sysroot")
-                    .trim()
-                    .into(),
-            ),
+                    .trim().to_owned();
+                if _s.len() > 0 {
+                    println!("cargo:warning=sysroot > 0: {}", _s);
+                    Some(_s.into())
+                } else {
+                    println!("cargo:warning=sysroot <= 0: {}", _s);
+                    None
+                }
+                    
+            },
+                
             false => None,
         };
+        let compiler_path = cc::Build::new().get_compiler().path().to_owned();
+        println!("cargo:warning=cc compiler path: {}", compiler_path.display());
         let multi_dir_output = cc::Build::new()
             .get_compiler()
             .to_command()
@@ -221,7 +272,7 @@ fn main() {
             }
             _ => {}
         }
-
+        println!("cargo::warning=current target_os:{}", target_os);
         // If bare metal (no-std), use the following config.
         #[cfg(not(feature = "std"))]
         {
@@ -241,8 +292,10 @@ fn main() {
             ]);
             // C flags for no-std runtime build
             cflags.extend(vec![
-                // "-specs=nosys.specs",
+                "-specs=nosys.specs",
                 // "-specs=nano.specs",
+                "-D__STDC_FORMAT_MACROS=1",
+                "-include sys/_stdint.h",
                 "-DIREE_PLATFORM_GENERIC=1",
                 "-DIREE_FILE_IO_ENABLE=0",
                 "-DIREE_SYNCHRONIZATION_DISABLE_UNSAFE=1",
@@ -306,9 +359,10 @@ fn main() {
             }
 
             "none" => {
+                println!("cargo:warning=multi_dir {}", multi_dir.clone().unwrap().display());
                 println!(
                     "cargo:rustc-link-search={}/lib/{}",
-                    sysroot.unwrap().display(),
+                    "/usr/lib/arm-none-eabi/", // TODO: temporary fix for nrf52
                     multi_dir.unwrap().display()
                 );
                 println!("cargo:rustc-link-lib=nosys");
