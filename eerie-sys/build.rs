@@ -287,6 +287,7 @@ fn main() {
                 ("IREE_HAL_EXECUTABLE_PLUGIN_DEFAULTS", "OFF"),
                 ("IREE_HAL_EXECUTABLE_PLUGIN_EMBEDDED_ELF", "ON"),
                 ("IREE_ENABLE_POSITION_INDEPENDENT_CODE", "OFF"),
+                ("IREE_ENABLE_CPUINFO", "OFF"),
                 ("IREE_HOST_BIN_DIR", host_bin_dir.to_str().unwrap()),
                 ("CMAKE_SYSTEM_NAME", "Generic"),
             ]);
@@ -296,6 +297,7 @@ fn main() {
                 // "-specs=nano.specs",
                 "-D__STDC_FORMAT_MACROS=1",
                 "-include sys/_stdint.h",
+                "-DIREE_VM_BYTECODE_VERIFICATION_ENABLE=0",
                 "-DIREE_PLATFORM_GENERIC=1",
                 "-DIREE_FILE_IO_ENABLE=0",
                 "-DIREE_SYNCHRONIZATION_DISABLE_UNSAFE=1",
