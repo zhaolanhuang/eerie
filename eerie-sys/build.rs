@@ -272,7 +272,7 @@ fn main() {
             }
             _ => {}
         }
-        println!("cargo::warning=current target_os:{}", target_os);
+        println!("cargo:warning=current target_os:{}", target_os);
         // If bare metal (no-std), use the following config.
         #[cfg(not(feature = "std"))]
         {
@@ -292,11 +292,7 @@ fn main() {
                 ("CMAKE_SYSTEM_NAME", "Generic"),
             ]);
             // C flags for no-std runtime build
-            cflags.extend(vec![
-                "-specs=nosys.specs",
-                // "-specs=nano.specs",
-                "-D__STDC_FORMAT_MACROS=1",
-                "-include sys/_stdint.h",
+            cflags.extend(vec![              
                 "-DIREE_VM_BYTECODE_VERIFICATION_ENABLE=0",
                 "-DIREE_PLATFORM_GENERIC=1",
                 "-DIREE_FILE_IO_ENABLE=0",
@@ -312,7 +308,19 @@ fn main() {
                 "-Wno-error=unused-variable",
                 "-Wl,--gc-sections",
             ]);
+        
+            if target_os.as_str() == "none" {
+                cflags.extend(vec![
+                    "-specs=nosys.specs",
+                    "-D__STDC_FORMAT_MACROS=1",
+                    "-include sys/_stdint.h",
+                ]);
+
+            }
+
+
         }
+
 
         cmake_defs.iter().for_each(|(k, v)| {
             config.define(k, v);
@@ -348,29 +356,38 @@ fn main() {
         println!("cargo:rustc-link-lib=iree_runtime_unified");
         println!("cargo:rustc-link-lib=flatcc_parsing");
 
+        #[cfg(feature = "std")]
+        {
+            println!(
+            "cargo:rustc-link-search={}",
+            build_path.join("build/third_party/cpuinfo").display()
+        );
+            println!("cargo:rustc-link-lib=cpuinfo");
+        }
+
         match target_os.as_str() {
             "linux" => {
-                println!("cargo:rustc-link-lib=stdc++");
-                println!("cargo:rustc-link-lib=m"); // for ariel-os native: avoid undefined reference to math functions.
+            println!("cargo:rustc-link-lib=stdc++");
+            println!("cargo:rustc-link-lib=m"); // for ariel-os native: avoid undefined reference to math functions.
 
-            }
-
+        }
+            
             "macos" => {
-                println!("cargo:rustc-link-lib=framework=Foundation");
-                println!("cargo:rustc-link-lib=framework=Metal");
-            }
+            println!("cargo:rustc-link-lib=framework=Foundation");
+            println!("cargo:rustc-link-lib=framework=Metal");
+        }
 
             "none" => {
-                println!("cargo:warning=multi_dir {}", multi_dir.clone().unwrap().display());
-                println!(
-                    "cargo:rustc-link-search={}/lib/{}",
-                    "/usr/lib/arm-none-eabi/", // TODO: temporary fix for nrf52
-                    multi_dir.unwrap().display()
-                );
-                println!("cargo:rustc-link-lib=nosys");
-                println!("cargo:rustc-link-lib=c");
-                println!("cargo:rustc-link-lib=m");
-            }
+            println!("cargo:warning=multi_dir {}", multi_dir.clone().unwrap().display());
+            println!(
+                "cargo:rustc-link-search={}/lib/{}",
+                "/usr/lib/arm-none-eabi/", // TODO: temporary fix for nrf52
+                multi_dir.unwrap().display()
+            );
+            println!("cargo:rustc-link-lib=nosys");
+            println!("cargo:rustc-link-lib=c");
+            println!("cargo:rustc-link-lib=m");
+        }
             _ => {
                 panic!("Only Linux, macOS, and no-std targets are supported");
             }

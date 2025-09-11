@@ -6,13 +6,12 @@ pub mod compiler;
 pub mod runtime;
 
 // avoid reference conflicts. 
-// TODO: needed by non-native env, needs furnish..
-#[cfg(not(feature = "std"))]
+#[cfg(all(target_os = "none", not(feature = "std")))]
 #[no_mangle]
 pub extern "C" fn _fini() -> ! {
     loop {}
 }
 
-#[cfg(not(feature = "std"))]
+#[cfg(all(target_os = "none", not(feature = "std")))]
 #[no_mangle]
 static end: u8 = 0;
