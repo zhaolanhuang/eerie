@@ -4,3 +4,5 @@
 pub mod compiler;
 #[cfg(feature = "runtime")]
 pub mod runtime;
+
+pub use eerie_sys;

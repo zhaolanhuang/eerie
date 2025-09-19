@@ -253,25 +253,32 @@ fn main() {
 
         let mut cflags = vec![];
 
-        match std::env::var("OPT_LEVEL").unwrap().as_str() {
-            "z" => {
-                cflags.push("-Oz");
-                cmake_defs.push(("IREE_SIZE_OPTIMIZED", "ON"));
-            }
-            "3" => {
-                cflags.push("-O3");
-            }
-            "2" => {
-                cflags.push("-O2");
-            }
-            "1" => {
-                cflags.push("-O1");
-            }
-            "0" => {
-                cflags.push("-O0");
-            }
-            _ => {}
-        }
+       match std::env::var("OPT_LEVEL").unwrap().as_str() {
+           "s" => {
+               cflags.push("-Os");
+               cmake_defs.push(("IREE_SIZE_OPTIMIZED", "ON"));
+               cmake_defs.push(("CMAKE_BUILD_TYPE", "MinSizeRel"));
+           }
+           "z" => {
+               cflags.push("-Oz");
+               cmake_defs.push(("IREE_SIZE_OPTIMIZED", "ON"));
+               cmake_defs.push(("CMAKE_BUILD_TYPE", "MinSizeRel"));
+           }
+           "3" => {
+               cflags.push("-O3");
+           }
+           "2" => {
+               cflags.push("-O2");
+           }
+           "1" => {
+               cflags.push("-O1");
+           }
+           "0" => {
+               cflags.push("-O0");
+           }
+           _ => {}
+       }
+
         println!("cargo:warning=current target_os:{}", target_os);
         // If bare metal (no-std), use the following config.
         #[cfg(not(feature = "std"))]
@@ -290,6 +297,9 @@ fn main() {
                 ("IREE_ENABLE_CPUINFO", "OFF"),
                 ("IREE_HOST_BIN_DIR", host_bin_dir.to_str().unwrap()),
                 ("CMAKE_SYSTEM_NAME", "Generic"),
+                ("CMAKE_EXE_LINKER_FLAGS", "-Wl,-Map=/tmp/iree -Wl,--cref"),
+                ("CMAKE_EXE_LINKER_FLAGS_MINSIZEREL", "-Wl,-Map=/tmp/iree -Wl,--cref"),
+
             ]);
             // C flags for no-std runtime build
             cflags.extend(vec![              
@@ -307,6 +317,11 @@ fn main() {
                 "-Wno-format",
                 "-Wno-error=unused-variable",
                 "-Wl,--gc-sections",
+                "-Wl,-Map=/tmp/iree -Wl,--cref",
+//                "-Wl,--cref",
+//                "-Wl,-Map=/tmp/iree"
+                // "-Og",
+                // "-g",
             ]);
         
             if target_os.as_str() == "none" {

@@ -94,8 +94,8 @@ impl<'a> From<StringView<'a>> for &'a str {
     }
 }
 
-pub(crate) struct Allocator {
-    pub(crate) ctx: sys::iree_allocator_t,
+pub struct Allocator {
+    pub ctx: sys::iree_allocator_t,
 }
 
 impl Allocator {
@@ -238,18 +238,18 @@ pub struct Status {
 }
 
 impl Status {
-    pub(crate) fn from_raw(ctx: sys::iree_status_t) -> Self {
+    pub fn from_raw(ctx: sys::iree_status_t) -> Self {
         Self { ctx }
     }
 
-    pub(crate) fn from_code(status_kind: StatusErrorKind) -> Self {
+    pub fn from_code(status_kind: StatusErrorKind) -> Self {
         let status: sys::iree_status_code_e = status_kind.into();
         Status {
             ctx: &STATUS_CODES[status as usize] as *const usize as *mut usize as *mut _,
         }
     }
 
-    pub(crate) fn is_ok(&self) -> bool {
+    pub fn is_ok(&self) -> bool {
         self.ctx as usize == 0
     }
 

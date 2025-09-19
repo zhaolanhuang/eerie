@@ -44,8 +44,8 @@ impl Default for DriverRegistry {
 
 /// A HAL device.
 pub struct Device<'a> {
-    pub(crate) ctx: *mut sys::iree_hal_device_t,
-    pub(crate) marker: core::marker::PhantomData<&'a api::Session<'a>>,
+    pub ctx: *mut sys::iree_hal_device_t,
+    pub marker: core::marker::PhantomData<&'a api::Session<'a>>,
 }
 
 impl Drop for Device<'_> {
