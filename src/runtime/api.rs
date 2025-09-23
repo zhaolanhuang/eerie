@@ -68,7 +68,7 @@ impl<'a> InstanceOptions<'a> {
 /// interoperation by sharing an instance. If two tenants must never share any data (PII) then they
 /// should be placed in different instances.
 pub struct Instance {
-    ctx: *mut sys::iree_runtime_instance_t,
+    pub ctx: *mut sys::iree_runtime_instance_t,
 }
 
 // Instance is thread-safe.
@@ -246,8 +246,16 @@ impl<'a> Session<'a> {
         .map_err(RuntimeError::StatusError)
     }
 
-    // pub fn append_module(&self, module: &Module) -> Result<(), RuntimeError> {
-    // TODO: implement this
+    pub unsafe fn append_module(&self, module: &mut sys::iree_vm_module_t) -> Result<(), RuntimeError> {
+        base::Status::from_raw(unsafe {
+            sys::iree_runtime_session_append_module(
+                self.ctx,
+                module as *mut sys::iree_vm_module_t,
+            )
+        })
+        .to_result()
+        .map_err(RuntimeError::StatusError)
+    }    
 
     /// Appends a bytecode module to the context loaded from the given memory blob.
     /// If the module exists as a file, prefer instead to use append_module_from_file to use memory
