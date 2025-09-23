@@ -280,6 +280,7 @@ fn main() {
        }
 
         println!("cargo:warning=current target_os:{}", target_os);
+        let target = std::env::var("TARGET").unwrap();
         // If bare metal (no-std), use the following config.
         #[cfg(not(feature = "std"))]
         {
@@ -300,6 +301,17 @@ fn main() {
                 ("CMAKE_EXE_LINKER_FLAGS", "-Wl,-Map=/tmp/iree -Wl,--cref"),
                 ("CMAKE_EXE_LINKER_FLAGS_MINSIZEREL", "-Wl,-Map=/tmp/iree -Wl,--cref"),
 
+                ("CMAKE_C_COMPILER", "clang"),
+                ("CMAKE_CXX_COMPILER", "clang++"),
+                ("CMAKE_ASM_COMPILER", "clang"),
+
+                ("CMAKE_C_COMPILER_TARGET", &target),
+                ("CMAKE_CXX_COMPILER_TARGET", &target),
+                ("CMAKE_ASM_COMPILER_TARGET", &target),
+
+                ("IREE_ENABLE_LLD", "ON"),
+                ("IREE_ENABLE_THIN_ARCHIVES", "ON"),
+
             ]);
             // C flags for no-std runtime build
             cflags.extend(vec![              
@@ -318,20 +330,21 @@ fn main() {
                 "-Wno-error=unused-variable",
                 "-Wl,--gc-sections",
                 "-Wl,-Map=/tmp/iree -Wl,--cref",
+                "-vv"
 //                "-Wl,--cref",
 //                "-Wl,-Map=/tmp/iree"
                 // "-Og",
                 // "-g",
             ]);
         
-            if target_os.as_str() == "none" {
-                cflags.extend(vec![
-                    "-specs=nosys.specs",
-                    "-D__STDC_FORMAT_MACROS=1",
-                    "-include sys/_stdint.h",
-                ]);
-
-            }
+//            if target_os.as_str() == "none" {
+//                cflags.extend(vec![
+//                    "-specs=nosys.specs",
+//                    "-D__STDC_FORMAT_MACROS=1",
+//                    "-include sys/_stdint.h",
+//                ]);
+//
+//            }
 
 
         }
