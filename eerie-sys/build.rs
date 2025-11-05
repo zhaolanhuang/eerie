@@ -52,10 +52,10 @@ fn generate_bindings(
 
             let includes = parse_include_paths(&String::from_utf8(compiler_output.stderr).expect("Failed to parse compiler output!").as_str());
             println!("cargo:warning=parse include path done!");
-            for path in &includes {
-                println!("cargo:warning=include path: {}", path);
-                builder = builder.clang_arg(format!("-I{}", path))
-            }
+//            for path in &includes {
+//                println!("cargo:warning=include path: {}", path);
+//                builder = builder.clang_arg(format!("-I{}", path))
+//            }
         }
 
         builder
@@ -88,7 +88,8 @@ fn parse_include_paths(stderr: &str) -> Vec<String> {
 }
 
 fn main() {
-    let iree_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("iree");
+    let iree_path = PathBuf::from("/media/zhaolan/Data-Big/TinyML/iree");
+//    let iree_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("iree");
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
 
     #[cfg(all(target_os = "none", feature = "std"))]
@@ -256,12 +257,12 @@ fn main() {
        match std::env::var("OPT_LEVEL").unwrap().as_str() {
            "s" => {
                cflags.push("-Os");
-               cmake_defs.push(("IREE_SIZE_OPTIMIZED", "ON"));
+//               cmake_defs.push(("IREE_SIZE_OPTIMIZED", "ON"));
                cmake_defs.push(("CMAKE_BUILD_TYPE", "MinSizeRel"));
            }
            "z" => {
                cflags.push("-Oz");
-               cmake_defs.push(("IREE_SIZE_OPTIMIZED", "ON"));
+//               cmake_defs.push(("IREE_SIZE_OPTIMIZED", "ON"));
                cmake_defs.push(("CMAKE_BUILD_TYPE", "MinSizeRel"));
            }
            "3" => {
@@ -281,6 +282,10 @@ fn main() {
 
         println!("cargo:warning=current target_os:{}", target_os);
         let target = std::env::var("TARGET").unwrap();
+        
+        let clang_path = PathBuf::from(std::env::var("CLANG_PATH").unwrap());
+        let clang_bin_dir = clang_path.parent().unwrap();
+        let clangpp_path = clang_bin_dir.join("clang++");
         // If bare metal (no-std), use the following config.
         #[cfg(not(feature = "std"))]
         {
@@ -289,21 +294,24 @@ fn main() {
                 ("IREE_ENABLE_THREADING", "OFF"),
                 ("IREE_HAL_DRIVER_DEFAULTS", "OFF"),
                 ("IREE_HAL_DRIVER_LOCAL_SYNC", "ON"),
+                ("IREE_HAL_DRIVER_LOCAL_TASK", "OFF"),
                 ("IREE_HAL_EXECUTABLE_LOADER_DEFAULTS", "OFF"),
-                ("IREE_HAL_EXECUTABLE_LOADER_EMBEDDED_ELF", "ON"),
-                ("IREE_HAL_EXECUTABLE_LOADER_VMVX_MODULE", "ON"),
+                ("IREE_HAL_EXECUTABLE_LOADER_EMBEDDED_ELF", "OFF"),
+                ("IREE_HAL_EXECUTABLE_LOADER_VMVX_MODULE", "OFF"),
                 ("IREE_HAL_EXECUTABLE_PLUGIN_DEFAULTS", "OFF"),
-                ("IREE_HAL_EXECUTABLE_PLUGIN_EMBEDDED_ELF", "ON"),
+                ("IREE_HAL_EXECUTABLE_PLUGIN_EMBEDDED_ELF", "OFF"),
                 ("IREE_ENABLE_POSITION_INDEPENDENT_CODE", "OFF"),
                 ("IREE_ENABLE_CPUINFO", "OFF"),
                 ("IREE_HOST_BIN_DIR", host_bin_dir.to_str().unwrap()),
                 ("CMAKE_SYSTEM_NAME", "Generic"),
-                ("CMAKE_EXE_LINKER_FLAGS", "-Wl,-Map=/tmp/iree -Wl,--cref"),
-                ("CMAKE_EXE_LINKER_FLAGS_MINSIZEREL", "-Wl,-Map=/tmp/iree -Wl,--cref"),
+//                ("CMAKE_EXE_LINKER_FLAGS", "-Wl,-Map=/tmp/iree -Wl,--cref"),
+//                ("CMAKE_EXE_LINKER_FLAGS_MINSIZEREL", "-Wl,-Map=/tmp/iree -Wl,--cref"),
+//                ("CMAKE_LINKER_TYPE", "LLD"),
+                ("CMAKE_TRY_COMPILE_TARGET_TYPE", "STATIC_LIBRARY"),
 
-                ("CMAKE_C_COMPILER", "clang"),
-                ("CMAKE_CXX_COMPILER", "clang++"),
-                ("CMAKE_ASM_COMPILER", "clang"),
+                ("CMAKE_C_COMPILER", clang_path.to_str().unwrap()),
+                ("CMAKE_CXX_COMPILER", clangpp_path.to_str().unwrap()),
+                ("CMAKE_ASM_COMPILER", clang_path.to_str().unwrap()),
 
                 ("CMAKE_C_COMPILER_TARGET", &target),
                 ("CMAKE_CXX_COMPILER_TARGET", &target),
@@ -311,6 +319,13 @@ fn main() {
 
                 ("IREE_ENABLE_LLD", "ON"),
                 ("IREE_ENABLE_THIN_ARCHIVES", "ON"),
+                ("IREE_RUNTIME_OPTIMIZATION_PROFILE", "size"),
+
+                ("CMAKE_LINKER_TYPE", "LLD"),
+                
+                // Skip compiler check
+//                ("CMAKE_C_COMPILER_FORCED", "TRUE"),
+//                ("CMAKE_CXX_COMPILER_FORCED", "TRUE"),
 
             ]);
             // C flags for no-std runtime build
@@ -319,18 +334,38 @@ fn main() {
                 "-DIREE_PLATFORM_GENERIC=1",
                 "-DIREE_FILE_IO_ENABLE=0",
                 "-DIREE_SYNCHRONIZATION_DISABLE_UNSAFE=1",
+                "-DPTHREAD_ONCE_INIT=\"{1, 0}\"",
+//                 "-Wno-atomic-alignment",
+//                "-D_POSIX_THREADS",
+//                "-pthread",
                 "-DIREE_TIME_NOW_FN=\"{return 0; }\"",
                 "-D'IREE_WAIT_UNTIL_FN(n)=false'",
+                "-D'IREE_MEMORY_FLUSH_ICACHE(start, end)'",
                 "-DFLATCC_USE_GENERIC_ALIGNED_ALLOC",
                 "-DIREE_STATUS_FEATURES=0",
+                "-DIREE_TRACING_FEATURES_REQUESTED=0",
+//                "-DIREE_STATUS_MODE=2",
+                "-fno-stack-protector",
                 "-fdata-sections",
                 "-ffunction-sections",
                 "-Wno-char-subscripts",
                 "-Wno-format",
                 "-Wno-error=unused-variable",
                 "-Wl,--gc-sections",
-                "-Wl,-Map=/tmp/iree -Wl,--cref",
-                "-vv"
+//                "-fuse-ld=lld",
+                "-nodefaultlibs",
+//                "-rtlib=compiler-rt",
+//                "-lc_nonshared",
+//                "-nostartfiles",
+                "-nostdlib",
+                "-nostdlib++",
+//                "-fno-use-init-array",
+//                "--no-default-config",
+//                "--config=/media/zhaolan/Data-Big/toolchain/bin/newlib-nano.cfg",
+                "-specs=nosys.specs"
+
+//                "-Wl,-Map=/tmp/iree -Wl,--cref",
+//                "-vv"
 //                "-Wl,--cref",
 //                "-Wl,-Map=/tmp/iree"
                 // "-Og",
@@ -395,8 +430,8 @@ fn main() {
 
         match target_os.as_str() {
             "linux" => {
-            println!("cargo:rustc-link-lib=stdc++");
-            println!("cargo:rustc-link-lib=m"); // for ariel-os native: avoid undefined reference to math functions.
+          println!("cargo:rustc-link-lib=stdc++");
+          println!("cargo:rustc-link-lib=m"); // for ariel-os native: avoid undefined reference to math functions.
 
         }
             
@@ -407,14 +442,16 @@ fn main() {
 
             "none" => {
             println!("cargo:warning=multi_dir {}", multi_dir.clone().unwrap().display());
-            println!(
-                "cargo:rustc-link-search={}/lib/{}",
-                "/usr/lib/arm-none-eabi/", // TODO: temporary fix for nrf52
-                multi_dir.unwrap().display()
-            );
+//            println!(
+//                "cargo:rustc-link-search={}/lib/{}",
+//                "/usr/lib/arm-none-eabi/", // TODO: temporary fix for nrf52
+//                multi_dir.unwrap().display()
+//            );
             println!("cargo:rustc-link-lib=nosys");
             println!("cargo:rustc-link-lib=c");
+//            println!("cargo:rustc-link-lib=g");
             println!("cargo:rustc-link-lib=m");
+//            println!("cargo:rustc-link-lib=pthread");
         }
             _ => {
                 panic!("Only Linux, macOS, and no-std targets are supported");

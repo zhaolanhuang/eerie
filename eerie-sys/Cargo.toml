@@ -43,6 +43,7 @@ exclude = [
 bindgen = "0.69.4"
 cmake = "0.1.50"
 cc = "1.0.90"
+clang-sys = "1.0.0"
 
 [features]
 default = ["compiler", "runtime", "std"]
