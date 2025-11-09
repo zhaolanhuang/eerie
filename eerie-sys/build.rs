@@ -283,9 +283,6 @@ fn main() {
         println!("cargo:warning=current target_os:{}", target_os);
         let target = std::env::var("TARGET").unwrap();
         
-        let clang_path = PathBuf::from(std::env::var("CLANG_PATH").unwrap());
-        let clang_bin_dir = clang_path.parent().unwrap();
-        let clangpp_path = clang_bin_dir.join("clang++");
         // If bare metal (no-std), use the following config.
         #[cfg(not(feature = "std"))]
         {
@@ -309,9 +306,9 @@ fn main() {
 //                ("CMAKE_LINKER_TYPE", "LLD"),
                 ("CMAKE_TRY_COMPILE_TARGET_TYPE", "STATIC_LIBRARY"),
 
-                ("CMAKE_C_COMPILER", clang_path.to_str().unwrap()),
-                ("CMAKE_CXX_COMPILER", clangpp_path.to_str().unwrap()),
-                ("CMAKE_ASM_COMPILER", clang_path.to_str().unwrap()),
+                ("CMAKE_C_COMPILER", "clang"),
+                ("CMAKE_CXX_COMPILER", "clang++"),
+                ("CMAKE_ASM_COMPILER", "clang"),
 
                 ("CMAKE_C_COMPILER_TARGET", &target),
                 ("CMAKE_CXX_COMPILER_TARGET", &target),
@@ -361,7 +358,7 @@ fn main() {
                 "-nostdlib++",
 //                "-fno-use-init-array",
 //                "--no-default-config",
-//                "--config=/media/zhaolan/Data-Big/toolchain/bin/newlib-nano.cfg",
+                "--config=/media/zhaolan/Data-Big/toolchain/bin/newlib-nano.cfg",
                 "-specs=nosys.specs"
 
 //                "-Wl,-Map=/tmp/iree -Wl,--cref",
