@@ -20,6 +20,7 @@ fn generate_bindings(
         let mut builder = bindgen::Builder::default()
             .header(include_path.join(path).display().to_string())
             .clang_arg(format!("-I{}", include_path.display()))
+            .clang_arg("-I/home/zhaolan/riscv-gnu-toolchain/install-newlib-nano/riscv64-unknown-elf/include")
             .derive_default(true)
             .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()));
         println!("cargo:warning=include_path: {}", include_path.display());
@@ -52,10 +53,10 @@ fn generate_bindings(
 
             let includes = parse_include_paths(&String::from_utf8(compiler_output.stderr).expect("Failed to parse compiler output!").as_str());
             println!("cargo:warning=parse include path done!");
-//            for path in &includes {
-//                println!("cargo:warning=include path: {}", path);
-//                builder = builder.clang_arg(format!("-I{}", path))
-//            }
+            for path in &includes {
+                println!("cargo:warning=include path: {}", path);
+                builder = builder.clang_arg(format!("-I{}", path))
+            }
         }
 
         builder
@@ -281,8 +282,10 @@ fn main() {
        }
 
         println!("cargo:warning=current target_os:{}", target_os);
-        let target = std::env::var("TARGET").unwrap();
-        
+        let mut target = std::env::var("TARGET").unwrap();
+        if (target == "riscv32imc-unknown-none-elf") {
+            target = "riscv32-unknown-none-elf".to_string();
+        } 
         // If bare metal (no-std), use the following config.
         #[cfg(not(feature = "std"))]
         {
@@ -342,7 +345,6 @@ fn main() {
                 "-DIREE_STATUS_FEATURES=0",
                 "-DIREE_TRACING_FEATURES_REQUESTED=0",
 //                "-DIREE_STATUS_MODE=2",
-                "-fno-stack-protector",
                 "-fdata-sections",
                 "-ffunction-sections",
                 "-Wno-char-subscripts",
@@ -358,8 +360,9 @@ fn main() {
                 "-nostdlib++",
 //                "-fno-use-init-array",
 //                "--no-default-config",
-                "--config=/media/zhaolan/Data-Big/toolchain/bin/newlib-nano.cfg",
-                "-specs=nosys.specs"
+//                "--config=/media/zhaolan/Data-Big/toolchain/bin/newlib-nano.cfg",
+                "-I/home/zhaolan/riscv-gnu-toolchain/install-newlib-nano/riscv64-unknown-elf/include",
+                "-specs=nosys.specs",
 
 //                "-Wl,-Map=/tmp/iree -Wl,--cref",
 //                "-vv"
@@ -439,11 +442,12 @@ fn main() {
 
             "none" => {
             println!("cargo:warning=multi_dir {}", multi_dir.clone().unwrap().display());
-//            println!(
-//                "cargo:rustc-link-search={}/lib/{}",
-//                "/usr/lib/arm-none-eabi/", // TODO: temporary fix for nrf52
-//                multi_dir.unwrap().display()
-//            );
+            println!(
+                "cargo:rustc-link-search={}/lib/{}",
+              //  "/usr/lib/arm-none-eabi/", // TODO: temporary fix for nrf52
+               "/home/zhaolan/riscv-gnu-toolchain/install-newlib-nano/riscv64-unknown-elf/",
+                multi_dir.unwrap().display()
+            );
             println!("cargo:rustc-link-lib=nosys");
             println!("cargo:rustc-link-lib=c");
 //            println!("cargo:rustc-link-lib=g");
