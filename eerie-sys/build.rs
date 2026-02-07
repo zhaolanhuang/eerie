@@ -88,8 +88,7 @@ fn parse_include_paths(stderr: &str) -> Vec<String> {
 }
 
 fn main() {
-    let iree_path = PathBuf::from("/media/zhaolan/Data-Big/TinyML/iree");
-//    let iree_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("iree");
+    let iree_path = PathBuf::from(env::var("IREE_PATH").unwrap());
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
 
     #[cfg(all(target_os = "none", feature = "std"))]
