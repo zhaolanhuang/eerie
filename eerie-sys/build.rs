@@ -366,9 +366,6 @@ fn main() {
 
                 ("CMAKE_LINKER_TYPE", "LLD"),
                 
-                // Skip compiler check
-//                ("CMAKE_C_COMPILER_FORCED", "TRUE"),
-//                ("CMAKE_CXX_COMPILER_FORCED", "TRUE"),
 
             ]);
             // C flags for no-std runtime build
@@ -378,16 +375,12 @@ fn main() {
                 "-DIREE_FILE_IO_ENABLE=0",
                 "-DIREE_SYNCHRONIZATION_DISABLE_UNSAFE=1",
                 "-DPTHREAD_ONCE_INIT=\"{1, 0}\"",
-//                 "-Wno-atomic-alignment",
-//                "-D_POSIX_THREADS",
-//                "-pthread",
                 "-DIREE_TIME_NOW_FN=\"{return 0; }\"",
                 "-D'IREE_WAIT_UNTIL_FN(n)=false'",
                 "-D'IREE_MEMORY_FLUSH_ICACHE(start, end)'",
                 "-DFLATCC_USE_GENERIC_ALIGNED_ALLOC",
                 "-DIREE_STATUS_FEATURES=0",
                 "-DIREE_TRACING_FEATURES_REQUESTED=0",
-//                "-DIREE_STATUS_MODE=2",
                 "-fno-stack-protector",
                 "-fdata-sections",
                 "-ffunction-sections",
@@ -395,26 +388,11 @@ fn main() {
                 "-Wno-format",
                 "-Wno-error=unused-variable",
                 "-Wl,--gc-sections",
-//                "-fuse-ld=lld",
                 "-nodefaultlibs",
-//                "-rtlib=compiler-rt",
-//                "-lc_nonshared",
-//                "-nostartfiles",
                 "-nostdlib",
                 "-nostdlib++",
-//                "-fno-use-init-array",
-//                "--no-default-config",
-                "--config=/media/zhaolan/Data-Big/toolchain/bin/newlib-nano.cfg",
-                "-specs=nosys.specs"
-
-//                "-Wl,-Map=/tmp/iree -Wl,--cref",
-//                "-vv"
-//                "-Wl,--cref",
-//                "-Wl,-Map=/tmp/iree"
-                // "-Og",
-                // "-g",
             ]);
-        
+
 //            if target_os.as_str() == "none" {
 //                cflags.extend(vec![
 //                    "-specs=nosys.specs",
@@ -498,9 +476,7 @@ fn main() {
 //            );
             println!("cargo:rustc-link-lib=nosys");
             println!("cargo:rustc-link-lib=c");
-//            println!("cargo:rustc-link-lib=g");
             println!("cargo:rustc-link-lib=m");
-//            println!("cargo:rustc-link-lib=pthread");
         }
             _ => {
                 panic!("Only Linux, macOS, and no-std targets are supported");
