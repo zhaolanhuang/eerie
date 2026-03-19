@@ -1,5 +1,5 @@
 use eerie_sys::compiler as sys;
-use log::{debug, error};
+use defmt_or_log::{debug, error};
 use std::{
     ffi::{CStr, CString},
     fmt::{Debug, Display, Formatter},

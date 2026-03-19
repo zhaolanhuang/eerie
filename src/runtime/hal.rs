@@ -1,7 +1,7 @@
 use core::fmt::{Debug, Formatter};
 
 use eerie_sys::runtime as sys;
-use log::debug;
+use defmt_or_log::{debug,};
 
 use super::{
     api::{self, Instance},

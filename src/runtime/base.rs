@@ -1,7 +1,7 @@
 use core::{alloc::Layout, ffi::c_void, fmt::Display, marker::PhantomData};
 extern crate alloc;
 use eerie_sys::runtime as sys;
-use log::trace;
+use defmt_or_log::{trace, info};
 
 /// A wrapper for a mutable byte span
 pub struct ByteSpan<'a> {
@@ -127,7 +127,7 @@ unsafe extern "C" fn null_allocator_ctl(
     match command {
         sys::iree_allocator_command_e_IREE_ALLOCATOR_COMMAND_FREE => {
             trace!(
-                "null_allocator_ctl: IREE_ALLOCATOR_COMMAND_FREE, {:p}",
+                "null_allocator_ctl: IREE_ALLOCATOR_COMMAND_FREE, {:?}",
                 *inout_ptr
             );
         }
@@ -148,6 +148,10 @@ unsafe extern "C" fn rust_allocator_ctl(
     match command {
         sys::iree_allocator_command_e_IREE_ALLOCATOR_COMMAND_MALLOC => {
             let size = (*(params as *const sys::iree_allocator_alloc_params_t)).byte_length;
+             trace!(
+                "rust_allocator_ctl: trying IREE_ALLOCATOR_COMMAND_MALLOC: size: {}",
+                size,
+            );
             if size > core::isize::MAX as usize {
                 return Status::from_code(StatusErrorKind::OutOfRange).ctx;
             }
@@ -166,6 +170,11 @@ unsafe extern "C" fn rust_allocator_ctl(
         }
         sys::iree_allocator_command_e_IREE_ALLOCATOR_COMMAND_CALLOC => {
             let size = (*(params as *const sys::iree_allocator_alloc_params_t)).byte_length;
+            
+            trace!(
+                "rust_allocator_ctl: trying IREE_ALLOCATOR_COMMAND_CALLOC: size: {}",
+                size,
+            );
             if size > core::isize::MAX as usize {
                 return Status::from_code(StatusErrorKind::OutOfRange).ctx;
             }
@@ -218,7 +227,7 @@ unsafe extern "C" fn rust_allocator_ctl(
             let ptr = (*inout_ptr).wrapping_sub(ALIGNMENT);
             let size = unsafe { *(ptr as *mut usize) };
             trace!(
-                "rust_allocator_ctl: IREE_ALLOCATOR_COMMAND_FREE: size: {}->{:p}",
+                "rust_allocator_ctl: IREE_ALLOCATOR_COMMAND_FREE: size: {}->{:?}",
                 size,
                 *inout_ptr
             );

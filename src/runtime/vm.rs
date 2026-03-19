@@ -1,5 +1,5 @@
 use eerie_sys::runtime as sys;
-use log::trace;
+use defmt_or_log::{trace,};
 
 use super::{
     api::{self, Instance},

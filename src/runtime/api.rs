@@ -9,7 +9,8 @@ extern crate alloc;
 use alloc::string::ToString;
 use core::marker::PhantomData;
 use eerie_sys::runtime as sys;
-use log::trace;
+use defmt_or_log::{trace,};
+
 #[cfg(feature = "std")]
 use std::{ffi::CString, path::Path};
 
