@@ -426,6 +426,12 @@ fn main() {
 
 
         }
+        let clang_config_path = std::env::var("CLANG_CONFIG_PATH").unwrap();
+        let clang_config_flag = format!("--config={}", clang_config_path);
+        if !clang_config_path.is_empty() {
+           cflags.push(clang_config_flag.as_str());
+           cflags.push("-specs=nosys.specs");
+        }
 
 
         cmake_defs.iter().for_each(|(k, v)| {
